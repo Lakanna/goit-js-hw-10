@@ -1,41 +1,71 @@
 
-import axios from "axios";
+
 import SlimSelect from 'slim-select'
 import 'slim-select/dist/slimselect.css'
+import { fetchBreeds, fetchCatByBreed } from "./cat-api";
+import Notiflix from 'notiflix';
+
+
 
 const refs = {
     select: document.querySelector(".breed-select"),
+    catCard: document.querySelector(".cat-info"),
+    loader: document.querySelector(".loader"),
+    noteError: document.querySelector(".error"),
 };
-
-
-console.dir(refs.select);
-
-axios.defaults.headers.common["x-api-key"] = "live_uaHRHkKxQxGNH22vTJoGn29EtTqsN8pXxAlcznQ4tg2Wn80dVev2JEuNFxUDcsbx";
 
 // new SlimSelect({
 //   select: '#selectElement'
 // })
 
+console.dir(refs.loader);
 
-fetchBreeds().then((data) => createCatList(data));
+refs.loader.hidden = false;
+refs.select.hidden = true;
+
+fetchBreeds().then((data) => {
+    createCatList(data)
+    refs.loader.hidden = true;
+    refs.select.hidden = false;
+})
+    .catch((error) => { Notiflix.Notify.failure('Oops! Something went wrong! Try reloading the page!') });
    
 refs.select.addEventListener('change', onSelect);
 
 function onSelect(evt) {
+
+    refs.loader.hidden = false;
+    refs.catCard.hidden = true;
     const selectedBreed = evt.currentTarget.value;
-    console.log(selectedBreed);
-   console.log(fetchCatByBreed1(selectedBreed));  
-//    .then(()) 
+    
+    fetchCatByBreed(selectedBreed)
+        .then(createCard)
+        .catch((error) => { Notiflix.Notify.failure('Oops! Something went wrong! Try reloading the page!') });
+};
+
+function createCard(data) { 
+    const { url, breeds } = data[0];
+    const { description, temperament, name } = breeds[0];
+
+    createCardMarcup(url, description, temperament, name);
+
+    refs.loader.hidden = true;
+    refs.catCard.hidden = false;
+};
+
+function createCardMarcup(url, description, temperament, name) {
+    return refs.catCard.innerHTML = `
+    <div class="card-img">
+       <img src="${url}" alt="${name}" class="cat-img">
+    </div>
+    <div class="card-text">
+      <h1>${name}</h1>
+      <h3>${description}</h3>
+      <h3>Temperament: ${temperament}</h3>
+    </div>`
 }
 
-function fetchBreeds() {
-    return fetch("https://api.thecatapi.com/v1/breeds").then((response) => {
-        if (!response.ok) {
-            throw new Error(response.status);
-        }
-        return response.json();
-   } )
-}
+
 
 function createCatList(arr) {
    refs.select.innerHTML = arr.map(({ id, name }) => {
@@ -43,27 +73,11 @@ function createCatList(arr) {
     }).join('');
 }
 
-function fetchCatByBreed1(breedId) { 
-return fetch(`https://api.thecatapi.com/v1/images/search?api_key=live_uaHRHkKxQxGNH22vTJoGn29EtTqsN8pXxAlcznQ4tg2Wn80dVev2JEuNFxUDcsbx&breed_ids=${breedId}`)
-    .then((resp) =>{
-        if (!resp.ok) {
-          throw new Error(response.status);  
-        }
-        return resp.json();
-    })
-};
-   
-console.log(fetchCatByBreed1('amau'));
 
 
-function fetchCatByBreed(breedId) {
-   return axios.get(`https://api.thecatapi.com/v1/images/search?breed_ids=${breedId}`)
-  .then(response => {
-    return response.data; 
-  })
-};
 
 
-console.log(fetchCatByBreed('amau'));
+
+
 
 
